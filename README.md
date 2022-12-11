@@ -1,5 +1,6 @@
 # featurecounts
 
+## 1. Read the bed files and annotated in R  
     pka <- function(his){
       peak <- lapply(list.files(paste0('chip-nt-rawdata/', his), "*.bed"), function(x){
         return(readPeakFile(file.path(paste0('chip-nt-rawdata/', his), x)))
@@ -63,6 +64,23 @@
     }
     pka('H3K9me3')
 
+## 2.BED to saf in linux  
+
+The BED files can be used to convert to saf files for featurecount, it also can be used to fimo analysis.
+
+    vim bed2saf.sh
+
+    #!/bin/bash
+    ## make saf (bedtools) for featurecount ##
+
+    path=./pm_saf
+
+    cat filenames | while read i; 
+    do
+    nohup bedtools sort -i $path/${i}_allpeak.bed > $path/${i}.rm.bed && bedtools merge -c 4,6 -o first -i $path/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > $path/${i}.saf && rm $path/${i}.rm.bed -rf &
+    done
+
+## 3.Perform featurecounts in R  
 
     pkc <- function(name){
       bamPath <- paste0("chip-nt-rawdata/bam/", his)
@@ -82,6 +100,7 @@
                                                     countMultiMappingReads = F,
                                                     countChimericFragments = F,
                                                     nthreads = 8,
+                                                    isPairedEnd = T,
                                                     annot.ext = as.character(safPath[i,]))
         rm(i)
       }
