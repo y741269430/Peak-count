@@ -80,6 +80,21 @@ The BED files can be used to convert to saf files for featurecount, it also can 
     nohup bedtools sort -i $path/${i}_allpeak.bed > $path/${i}.rm.bed && bedtools merge -c 4,6 -o first -i $path/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > $path/${i}.saf && rm $path/${i}.rm.bed -rf &
     done
 
+or  
+
+    #!/bin/bash
+    ## make saf (bedtools) for featurecount ##
+
+    cat filenames | while read i; 
+    do
+    nohup bedtools sort -i ./pm_saf/${i}_allpeak.bed > ./pm_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./pm_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./pm_saf/${i}.saf && rm ./pm_saf/${i}.rm.bed -rf &
+
+    nohup bedtools sort -i ./gb_saf/${i}_allpeak.bed > ./gb_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./gb_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./gb_saf/${i}.saf && rm ./gb_saf/${i}.rm.bed -rf &
+
+    nohup bedtools sort -i ./dis_saf/${i}_allpeak.bed > ./dis_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./dis_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./dis_saf/${i}.saf && rm ./dis_saf/${i}.rm.bed -rf &
+
+    done
+
 ## 3.Perform featurecounts in R  
 
     pkc <- function(name){
