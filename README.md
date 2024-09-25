@@ -1,7 +1,7 @@
 # featurecounts
 
-## 1. Read the bed files and annotated in R  
-
+## 1. Read the bed files and annotated in R   
+```r  
 readpath = '/home/jjyang/yjj/ATAC/blacklist_rm/'
 path = '/home/jjyang/yjj/ATAC/'
 
@@ -86,7 +86,7 @@ for (i in 1:length(gb_bed)) {
               file = paste0(path, 'count/', names(gb_bed)[i], '_gb.bed'),
               sep = "\t", row.names = FALSE, col.names = colnames(gb_bed[[i]]), quote = FALSE)
 }
-
+```
 
 
 
