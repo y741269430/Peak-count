@@ -1,10 +1,13 @@
 # featurecounts
 
-## 1. Read the bed files and annotated in R   
-```r  
+#### 设置工作路径 ####  
+```r
 readpath = '/home/jjyang/yjj/ATAC/blacklist_rm/'
 path = '/home/jjyang/yjj/ATAC/'
+```
 
+## 1. 加载macs3输出的narrowPeak，并且过滤了blacklists  
+```r
 peak <- lapply(list.files(readpath, "*.narrowPeak"), function(x){
   return(readPeakFile(file.path(readpath, x)))
 })
@@ -12,10 +15,7 @@ peak <- lapply(list.files(readpath, "*.narrowPeak"), function(x){
 names(peak) <- str_split_fixed(list.files(readpath, "*.narrowPeak"), '_p', n = 2)[,1]
 txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
 
-
-names(peak) <- c('CTRL_2', 'CTRL_4', 'CTRL_5', 'CTRL_6', 'CTRL_7', 'CTRL_8', 'CTRL_9', 'CFA_31', 'CFA_33', 'CFA_34', 'CFA_1', 'CFA_2')
-
-
+#### 注释  
 peakAnnoList <- lapply(peak, annotatePeak, TxDb=txdb, tssRegion=c(-3000, 3000), 
                        annoDb="org.Mm.eg.db", verbose=FALSE, overlap="all")
 peakAnno_df <- lapply(peakAnnoList, function(x){x <- as.data.frame(x)})
@@ -24,8 +24,10 @@ peakAnno_df <- lapply(peakAnno_df, function(x){
   colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
   return(x)
 })
+```
 
-
+## 2.基础绘图，peak占比，TSS热图等   
+```r
 plotDistToTSS(peakAnnoList)
 ggplot2::ggsave(paste0(path, "results/plotDistToTSS.pdf"),
                 height = 5, width = 8, dpi = 300, limitsize = FALSE)
@@ -42,9 +44,10 @@ plotAvgProf(tagMatrixList, xlim =c(-3000, 3000), conf=0.95, resample=500, facet=
 
 ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
                 height = 20, width = 8, dpi = 300, limitsize = FALSE)
+```
 
-#############
-
+## 3.筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
+```r
 region_bed <- lapply(peakAnno_df, function(x){
   x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
   x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
@@ -69,12 +72,14 @@ gb_bed <- lapply(peakAnno_df, function(x){
   colnames(x) <- c("GeneID","Chr","Start","End","Strand")
   return(x)
 })
+```
 
+储存在本地count文件夹内，需要提前创建该文件夹
+```r
 
-save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, 
-     file = paste0(path, 'count/Anno_df.RData'))
+save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, file = paste0(path, 'count/Anno_df.RData'))
 
-
+#### 输出saf文件格式的bed
 for (i in 1:length(pm_bed)) {
   write.table(x = pm_bed[[i]],
               file = paste0(path, 'count/', names(pm_bed)[i], '_pm.bed'),
@@ -87,43 +92,9 @@ for (i in 1:length(gb_bed)) {
               sep = "\t", row.names = FALSE, col.names = colnames(gb_bed[[i]]), quote = FALSE)
 }
 ```
+---
 
-
-
-
-
-## 2.BED to saf in linux  
-
-The BED files can be used to convert to saf files for featurecount, it also can be used to fimo analysis.
-
-    vim bed2saf.sh
-
-    #!/bin/bash
-    ## make saf (bedtools) for featurecount ##
-
-    path=./pm_saf
-
-    cat filenames | while read i; 
-    do
-    nohup bedtools sort -i $path/${i}_allpeak.bed > $path/${i}.rm.bed && bedtools merge -c 4,6 -o first -i $path/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > $path/${i}.saf && rm $path/${i}.rm.bed -rf &
-    done
-
-or  
-
-    #!/bin/bash
-    ## make saf (bedtools) for featurecount ##
-
-    cat filenames | while read i; 
-    do
-    nohup bedtools sort -i ./pm_saf/${i}_allpeak.bed > ./pm_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./pm_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./pm_saf/${i}.saf && rm ./pm_saf/${i}.rm.bed -rf &
-
-    nohup bedtools sort -i ./gb_saf/${i}_allpeak.bed > ./gb_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./gb_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./gb_saf/${i}.saf && rm ./gb_saf/${i}.rm.bed -rf &
-
-    nohup bedtools sort -i ./dis_saf/${i}_allpeak.bed > ./dis_saf/${i}.rm.bed && bedtools merge -c 4,6 -o first -i ./dis_saf/${i}.rm.bed |awk 'BEGIN{print "GeneID" "\t"  "Chr" "\t" "Start" "\t" "End" "\t" "Strand"}{print $4"\t"$1"\t"strtonum($2)"\t"strtonum($3)"\t"$5}' > ./dis_saf/${i}.saf && rm ./dis_saf/${i}.rm.bed -rf &
-
-    done
-
-## 3.Perform featurecounts in R  
+## 4.进行count计算  
 
     pkc <- function(name){
       bamPath <- paste0("chip-nt-rawdata/bam/", his)
