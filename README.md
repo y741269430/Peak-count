@@ -96,6 +96,43 @@ for (i in 1:length(gb_bed)) {
 
 ## 4.进行count计算  
 
+制作bam文件和saf文件的路径，要求这两个数据框是一一对应的   
+```r
+bamPath <- paste0(path, 'bam/')
+bamNames <- dir(bamPath, pattern = "last.bam$") 
+bamPath <- sapply(bamNames, function(x){paste0(bamPath,x)})     
+bamPath <- data.frame(bamPath); rownames(bamPath) <- str_split_fixed(bamNames, "_", n = 2)[,1]
+
+safPath <- paste0(path, 'count/')
+safNames <- dir(safPath, pattern = "_pm.bed$") 
+safPath <- sapply(safNames, function(x){paste0(safPath,x)})   
+safPath <- data.frame(safPath)
+
+bamPath
+safPath
+```
+featureCounts计算  
+具体参考  
+- https://subread.sourceforge.net/SubreadUsersGuide.pdf  
+> `countMultiMappingReads` A multi-overlapping read is a read that overlaps more than one meta-feature when counting reads at meta-feature level or overlaps more than one feature when counting reads at feature level. The decision of whether or not to counting these reads is often determined by the experiment type. We recommend that reads or fragments overlapping more than one gene are not counted for RNA-seq experiments, because any single fragment must originate from only one of the target genes but the identity of the true target gene cannot be confidently determined. On the other hand, we recommend that multi-overlapping reads or fragments are counted for ChIP-seq experiments because for example epigenetic modifications inferred from these reads may regulate the biological functions of all their overlapping genes.
+> `allowMultiOverlap` By default, featureCounts does not count multi-overlapping reads. Users can specify the ‘-O’ option (set `allowMultiOverlap` to TRUE in R) to fully count them for each overlapping metafeature/feature (each overlapping meta-feature/feature receives a count of 1 from a read), or specify both ‘-O’ and ‘–fraction’ options (set both `allowMultiOverlap` and `fraction` to TRUE in R) to assign a fractional count to each overlapping meta-feature/feature (each overlapping meta-feature/feature receives a count of 1/y from a read where y is the total number of meta-features/features overlapping with the read).
+
+```r
+peak_counts <- list()
+for (i in 1:nrow(safPath)) {
+  peak_counts[[i]] <- Rsubread::featureCounts(files = as.character(bamPath[i,]),
+                                              allowMultiOverlap = T, 
+                                              fraction = T,
+                                              countMultiMappingReads = T,
+                                              countChimericFragments = F,
+                                              nthreads = 8,
+                                              isPairedEnd = T,
+                                              annot.ext = as.character(safPath[i,]))
+  rm(i)
+}
+```
+
+
     pkc <- function(name){
       bamPath <- paste0("chip-nt-rawdata/bam/", his)
       bamNames <- dir(bamPath, pattern = ".bam$") 
