@@ -1,68 +1,96 @@
 # featurecounts
 
 ## 1. Read the bed files and annotated in R  
-    pka <- function(his){
-      peak <- lapply(list.files(paste0('chip-nt-rawdata/', his), "*.bed"), function(x){
-        return(readPeakFile(file.path(paste0('chip-nt-rawdata/', his), x)))
-      })
 
-      names(peak) <- c('e11.5', 'e12.5', 'e13.5', 'e14.5', 'e15.5')
-      txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
-      peakAnnoList <- lapply(peak, annotatePeak, TxDb=txdb, tssRegion=c(-2000, 0), 
-                             annoDb="org.Mm.eg.db", verbose=FALSE, overlap="all")
-      peakAnno_df <- lapply(peakAnnoList, function(x){x <- as.data.frame(x)})
+readpath = '/home/jjyang/yjj/ATAC/blacklist_rm/'
+path = '/home/jjyang/yjj/ATAC/'
 
-      region_bed <- lapply(peakAnno_df, function(x){
-        colnames(x)[6:12] <- c('name', 'score', 'strand2', 'signalValue', 'pValue', 'qValue', 'peak')
-        x <- x[, c(1,2,3,23,7,8)]
-        return(x)
-      })
-      pm_bed <- lapply(peakAnno_df, function(x){
-        x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
-        x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
-        colnames(x)[6:12] <- c('name', 'score', 'strand2', 'signalValue', 'pValue', 'qValue', 'peak')
-        x <- x[, c(1,2,3,23,7,8)]
-        return(x)
-      })
-      gb_bed <- lapply(peakAnno_df, function(x){
-        x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
-        x <- x[c(grep("5' UTR", ignore.case = F, x$annotation),
-                 grep("Intron", ignore.case = F, x$annotation),
-                 grep("Exon", ignore.case = F, x$annotation),
-                 grep("Downstream", ignore.case = F, x$annotation),
-                 grep("3' UTR", ignore.case = F, x$annotation)), ]
-        colnames(x)[6:12] <- c('name', 'score', 'strand2', 'signalValue', 'pValue', 'qValue', 'peak')
-        x <- x[, c(1,2,3,23,7,8)]
-        return(x)
-      })
-      dis_bed <- lapply(peakAnno_df, function(x){
-        x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL), ]
-        x <- x[grep("Distal Intergenic", ignore.case = F, x$annotation),]
-        colnames(x)[6:12] <- c('name', 'score', 'strand2', 'signalValue', 'pValue', 'qValue', 'peak')
-        x <- x[, c(1,2,3,23,7,8)]
-        return(x)
-      })
+peak <- lapply(list.files(readpath, "*.narrowPeak"), function(x){
+  return(readPeakFile(file.path(readpath, x)))
+})
 
-      save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, dis_bed, 
-           file = paste0('chip-nt-rawdata/', his, '/chip_Anno_df.RData'))
+names(peak) <- str_split_fixed(list.files(readpath, "*.narrowPeak"), '_p', n = 2)[,1]
+txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
 
-      for (i in 1:length(pm_bed)) {
-        write.table(pm_bed[i],
-                    paste(paste0("chip-nt-rawdata/", his, "/pm_saf/"), names(pm_bed[i]), "_allpeak.bed", sep = ''),
-                    sep = "\t", row.names = F, col.names = F, quote = F)
-      }
-      for (i in 1:length(gb_bed)) {
-        write.table(gb_bed[i],
-                    paste(paste0("chip-nt-rawdata/", his, "/gb_saf/"), names(gb_bed[i]), "_allpeak.bed", sep = ''),
-                    sep = "\t", row.names = F, col.names = F, quote = F)
-      }
-      for (i in 1:length(dis_bed)) {
-        write.table(dis_bed[i],
-                    paste(paste0("chip-nt-rawdata/", his, "/dis_saf/"), names(dis_bed[i]), "_allpeak.bed", sep = ''),
-                    sep = "\t", row.names = F, col.names = F, quote = F)
-      }
-    }
-    pka('H3K9me3')
+
+names(peak) <- c('CTRL_2', 'CTRL_4', 'CTRL_5', 'CTRL_6', 'CTRL_7', 'CTRL_8', 'CTRL_9', 'CFA_31', 'CFA_33', 'CFA_34', 'CFA_1', 'CFA_2')
+
+
+peakAnnoList <- lapply(peak, annotatePeak, TxDb=txdb, tssRegion=c(-3000, 3000), 
+                       annoDb="org.Mm.eg.db", verbose=FALSE, overlap="all")
+peakAnno_df <- lapply(peakAnnoList, function(x){x <- as.data.frame(x)})
+
+peakAnno_df <- lapply(peakAnno_df, function(x){
+  colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
+  return(x)
+})
+
+
+plotDistToTSS(peakAnnoList)
+ggplot2::ggsave(paste0(path, "results/plotDistToTSS.pdf"),
+                height = 5, width = 8, dpi = 300, limitsize = FALSE)
+
+plotAnnoBar(peakAnnoList)
+ggplot2::ggsave(paste0(path, "results/plotAnnoBar.pdf"),
+                height = 5, width = 8, dpi = 300, limitsize = FALSE)
+
+promoter <- getPromoters(TxDb=txdb, upstream=3000, downstream=3000)
+
+tagMatrixList <- lapply(peak, getTagMatrix, windows=promoter)
+
+plotAvgProf(tagMatrixList, xlim =c(-3000, 3000), conf=0.95, resample=500, facet="row")
+
+ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
+                height = 20, width = 8, dpi = 300, limitsize = FALSE)
+
+#############
+
+region_bed <- lapply(peakAnno_df, function(x){
+  x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
+  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
+  colnames(x) <- c("GeneID","Chr","Start","End","Strand")
+  return(x)
+})
+
+pm_bed <- lapply(peakAnno_df, function(x){
+  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
+  x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
+  x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
+  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
+  colnames(x) <- c("GeneID","Chr","Start","End","Strand")
+  return(x)
+})
+
+gb_bed <- lapply(peakAnno_df, function(x){
+  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
+  x <- x[grep("Promoter|Distal Intergenic", ignore.case = F, x$annotation), ]
+  x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
+  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
+  colnames(x) <- c("GeneID","Chr","Start","End","Strand")
+  return(x)
+})
+
+
+save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, 
+     file = paste0(path, 'count/Anno_df.RData'))
+
+
+for (i in 1:length(pm_bed)) {
+  write.table(x = pm_bed[[i]],
+              file = paste0(path, 'count/', names(pm_bed)[i], '_pm.bed'),
+              sep = "\t", row.names = FALSE, col.names = colnames(pm_bed[[i]]), quote = FALSE)
+}
+
+for (i in 1:length(gb_bed)) {
+  write.table(x = gb_bed[[i]],
+              file = paste0(path, 'count/', names(gb_bed)[i], '_gb.bed'),
+              sep = "\t", row.names = FALSE, col.names = colnames(gb_bed[[i]]), quote = FALSE)
+}
+
+
+
+
+
 
 ## 2.BED to saf in linux  
 
