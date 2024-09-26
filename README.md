@@ -100,13 +100,13 @@ for (i in 1:length(gb_bed)) {
 ```
 
 ## 3.1构建meme-chip所需的bed文件  
-采用启动子区peak中心位置左右扩展250bp作为motif预测的region，而不是TSS位置的左右扩展。  
+采用启动子区peak中心位置左右扩展250bp作为motif预测的region，或者使用TSS位置的左右扩展250bp。  
 具体参考  
 https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
 https://github.com/y741269430/MEMEsuite  
 
 ```r
-pm_bed500_region <- lapply(peakAnno_df, function(x){
+pm_peak500_region <- lapply(peakAnno_df, function(x){
   x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
   x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
   x$start250 <- x$start + x$summit_peak_start - 250
@@ -115,14 +115,26 @@ pm_bed500_region <- lapply(peakAnno_df, function(x){
   return(x)
 })
 
-# 预先创建bed500文件夹，该输出文件将使用bedtools进行构建fasta
+pm_TSS500_region <- lapply(peakAnno_df, function(x){
+  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
+  x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
+  x$start250 <- x$start - 250
+  x$start500 <- x$start + 250
+  x <- x[, c("seqnames","start250","start500")]
+  return(x)
+})
 
-for (i in 1:length(pm_bed500_region)) {
-  write.table(x = pm_bed500_region[[i]],
-              file = paste0(path, 'bed500/', names(pm_bed500_region)[i], '_equal_p.bed'),
+# 预先创建peak500和TSS500文件夹，该输出文件将使用bedtools进行构建fasta
+for (i in 1:length(pm_peak500_region)) {
+  write.table(x = pm_peak500_region[[i]],
+              file = paste0(path, 'peak500/', names(pm_peak500_region)[i], '_equal_p.bed'),
               sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
-
+for (i in 1:length(pm_TSS500_region)) {
+  write.table(x = pm_TSS500_region[[i]],
+              file = paste0(path, 'TSS500/', names(pm_TSS500_region)[i], '_equal_p.bed'),
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
 ```
 ---
 
