@@ -74,9 +74,9 @@ gb_bed <- lapply(peakAnno_df, function(x){
 })
 ```
 
-储存在本地count文件夹内，需要提前创建该文件夹
+储存在本地results, count文件夹内，需要提前创建该文件夹
 ```r
-save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, file = paste0(path, 'count/Anno_df.RData'))
+save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, file = paste0(path, 'results/Anno_df.RData'))
 
 #### 输出saf文件格式的bed
 for (i in 1:length(pm_bed)) {
@@ -174,8 +174,8 @@ names(count_list) <- c(  )      # 重命名
 raw_counts <- Reduce(merge, count_list)
 colnames(raw_counts)[-1] <- c(  )      # 重命名
 
-save(count_list, file = paste0(path, 'count/count_list.RData'))
-write.csv(raw_counts, paste0(path, 'count/raw_counts.csv'), row.names = F)
+save(count_list, file = paste0(path, 'results/count_list.RData'))
+write.csv(raw_counts, paste0(path, 'results/raw_counts.csv'), row.names = F)
 ```
 
 
