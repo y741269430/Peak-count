@@ -76,7 +76,6 @@ gb_bed <- lapply(peakAnno_df, function(x){
 
 储存在本地count文件夹内，需要提前创建该文件夹
 ```r
-
 save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, file = paste0(path, 'count/Anno_df.RData'))
 
 #### 输出saf文件格式的bed
@@ -91,6 +90,32 @@ for (i in 1:length(gb_bed)) {
               file = paste0(path, 'count/', names(gb_bed)[i], '_gb.bed'),
               sep = "\t", row.names = FALSE, col.names = colnames(gb_bed[[i]]), quote = FALSE)
 }
+```
+
+## 3.1 构建meme-chip所需的bed文件  
+采用启动子区peak中心位置左右扩展250bp作为motif预测的region，而不是TSS位置的左右扩展。  
+具体参考  
+https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
+https://github.com/y741269430/MEMEsuite  
+
+```r
+pm_bed500_region <- lapply(peakAnno_df, function(x){
+  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
+  x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
+  x$start250 <- x$start + x$summit_peak_start - 250
+  x$start500 <- x$start + x$summit_peak_start + 250
+  x <- x[, c("seqnames","start250","start500")]
+  return(x)
+})
+
+# 预先创建bed500文件夹，该输出文件将使用bedtools进行构建fasta
+
+for (i in 1:length(pm_bed500_region)) {
+  write.table(x = pm_bed500_region[[i]],
+              file = paste0(path, 'bed500/', names(pm_bed500_region)[i], '_equal_p.bed'),
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
+
 ```
 ---
 
