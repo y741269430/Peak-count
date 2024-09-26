@@ -1,12 +1,19 @@
 # featurecounts
 
+## 目录 ####
+- 1. 加载macs3输出的narrowPeak，并且过滤了blacklists  
+- 2.基础绘图，peak占比，TSS热图等   
+- 3.筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
+- 3.1 构建meme-chip所需的bed文件  
+- 4.进行count计算 
+
 #### 设置工作路径 ####  
 ```r
 readpath = '/home/jjyang/yjj/ATAC/blacklist_rm/'
 path = '/home/jjyang/yjj/ATAC/'
 ```
 
-## 1. 加载macs3输出的narrowPeak，并且过滤了blacklists  
+## 1.加载macs3输出的narrowPeak，并且过滤了blacklists  
 ```r
 peak <- lapply(list.files(readpath, "*.narrowPeak"), function(x){
   return(readPeakFile(file.path(readpath, x)))
@@ -92,7 +99,7 @@ for (i in 1:length(gb_bed)) {
 }
 ```
 
-## 3.1 构建meme-chip所需的bed文件  
+## 3.1构建meme-chip所需的bed文件  
 采用启动子区peak中心位置左右扩展250bp作为motif预测的region，而不是TSS位置的左右扩展。  
 具体参考  
 https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
