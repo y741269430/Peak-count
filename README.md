@@ -1,7 +1,7 @@
 # featurecounts
 
 ## 目录 ####
-- 1. 加载macs3输出的narrowPeak，并且过滤了blacklists  
+- 1.加载macs3输出的narrowPeak，并且过滤了blacklists  
 - 2.基础绘图，peak占比，TSS热图等   
 - 3.筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
 - 3.1 构建meme-chip所需的bed文件  
