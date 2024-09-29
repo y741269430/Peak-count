@@ -119,6 +119,8 @@ pm_peak200_region <- lapply(peakAnno_df, function(x){
 })
 
 # 预先创建peak200文件夹，该输出文件将使用bedtools进行构建fasta
+dir.create(paste0(path, 'peak200/'))
+
 for (i in 1:length(pm_peak200_region)) {
   write.table(x = pm_peak200_region[[i]],
               file = paste0(path, 'peak200/', names(pm_peak200_region)[i], '_equal_p.bed'),
