@@ -100,41 +100,31 @@ for (i in 1:length(gb_bed)) {
 ```
 
 ## 3.1构建meme-chip所需的bed文件  
-采用启动子区peak中心位置左右扩展250bp作为motif预测的region，或者使用TSS位置的左右扩展250bp。  
-具体参考  
-https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
-https://github.com/y741269430/MEMEsuite  
+采用启动子区peak中心位置左右扩展100bp作为motif预测的region，因为两个核小体之间大概50-80bp，而测序片段约200-300bp，长度越长预测越不精确。  
+参考  
+- https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
+- [MEMEsuite](https://github.com/y741269430/MEMEsuite)
+> http://homer.ucsd.edu/homer/ngs/peakMotifs.html 里面是这么写的：  
+> `Region Size` ("-size <#>", "-size <#>,<#>", "-size given", default: 200)
+> The size of the region used for motif finding is important.  If analyzing ChIP-Seq peaks from a transcription factor, Chuck would recommend 50 bp for establishing the primary motif bound by a given transcription factor and 200 bp for finding both primary and "co-enriched" motifs for a transcription factor.  When looking at histone marked regions, 500-1000 bp is probably a good idea (i.e. H3K4me or H3/H4 acetylated regions).  In theory, HOMER can work with very large regions (i.e. 10kb), but with the larger the regions comes more sequence and longer execution time.  These regions will be based off the center of the peaks.  If you prefer an offset, you can specify "-size -300,100" to search a region of size 400 that is centered 100 bp upstream of the peak center (useful if doing motif finding on putative TSS regions).  If you have variable length regions, use the option "-size given" and HOMER will use the exact regions that were used as input.  
 
 ```r
 pm_peak500_region <- lapply(peakAnno_df, function(x){
   x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
   x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
-  x$start250 <- x$start + x$summit_peak_start - 250
-  x$start500 <- x$start + x$summit_peak_start + 250
-  x <- x[, c("seqnames","start250","start500")]
+  x$start100 <- x$start + x$summit_peak_start - 100
+  x$start200 <- x$start + x$summit_peak_start + 100
+  x <- x[, c("seqnames","start100","start200")]
   return(x)
 })
 
-pm_TSS500_region <- lapply(peakAnno_df, function(x){
-  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
-  x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
-  x$start250 <- x$start - 250
-  x$start500 <- x$start + 250
-  x <- x[, c("seqnames","start250","start500")]
-  return(x)
-})
+# 预先创建peak200文件夹，该输出文件将使用bedtools进行构建fasta
+for (i in 1:length(pm_peak200_region)) {
+  write.table(x = pm_peak200_region[[i]],
+              file = paste0(path, 'peak200/', names(pm_peak200_region)[i], '_equal_p.bed'),
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
 
-# 预先创建peak500和TSS500文件夹，该输出文件将使用bedtools进行构建fasta
-for (i in 1:length(pm_peak500_region)) {
-  write.table(x = pm_peak500_region[[i]],
-              file = paste0(path, 'peak500/', names(pm_peak500_region)[i], '_equal_p.bed'),
-              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
-}
-for (i in 1:length(pm_TSS500_region)) {
-  write.table(x = pm_TSS500_region[[i]],
-              file = paste0(path, 'TSS500/', names(pm_TSS500_region)[i], '_equal_p.bed'),
-              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
-}
 ```
 ---
 
