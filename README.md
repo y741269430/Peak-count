@@ -109,7 +109,7 @@ for (i in 1:length(gb_bed)) {
 > The size of the region used for motif finding is important.  If analyzing ChIP-Seq peaks from a transcription factor, Chuck would recommend 50 bp for establishing the primary motif bound by a given transcription factor and 200 bp for finding both primary and "co-enriched" motifs for a transcription factor.  When looking at histone marked regions, 500-1000 bp is probably a good idea (i.e. H3K4me or H3/H4 acetylated regions).  In theory, HOMER can work with very large regions (i.e. 10kb), but with the larger the regions comes more sequence and longer execution time.  These regions will be based off the center of the peaks.  If you prefer an offset, you can specify "-size -300,100" to search a region of size 400 that is centered 100 bp upstream of the peak center (useful if doing motif finding on putative TSS regions).  If you have variable length regions, use the option "-size given" and HOMER will use the exact regions that were used as input.  
 
 ```r
-pm_peak500_region <- lapply(peakAnno_df, function(x){
+pm_peak200_region <- lapply(peakAnno_df, function(x){
   x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
   x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
   x$start100 <- x$start + x$summit_peak_start - 100
