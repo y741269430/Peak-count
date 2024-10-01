@@ -109,21 +109,27 @@ for (i in 1:length(gb_bed)) {
 > The size of the region used for motif finding is important.  If analyzing ChIP-Seq peaks from a transcription factor, Chuck would recommend 50 bp for establishing the primary motif bound by a given transcription factor and 200 bp for finding both primary and "co-enriched" motifs for a transcription factor.  When looking at histone marked regions, 500-1000 bp is probably a good idea (i.e. H3K4me or H3/H4 acetylated regions).  In theory, HOMER can work with very large regions (i.e. 10kb), but with the larger the regions comes more sequence and longer execution time.  These regions will be based off the center of the peaks.  If you prefer an offset, you can specify "-size -300,100" to search a region of size 400 that is centered 100 bp upstream of the peak center (useful if doing motif finding on putative TSS regions).  If you have variable length regions, use the option "-size given" and HOMER will use the exact regions that were used as input.  
 
 ```r
-pm_peak200_region <- lapply(peakAnno_df, function(x){
-  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
+pm_peak500_region <- lapply(peakAnno_df, function(x){
   x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
-  x$start100 <- x$start + x$summit_peak_start - 100
-  x$start200 <- x$start + x$summit_peak_start + 100
-  x <- x[, c("seqnames","start100","start200")]
+  x$start100 <- x$start + x$summit_peak_start - 250
+  x$start200 <- x$start + x$summit_peak_start + 250
+  x$unique_name <- paste(x$SYMBOL, c(x$start200 - 250) ,sep = '_')
+  x <- x[, c("seqnames","start100","start200", "unique_name")]
   return(x)
 })
+```
 
-# 预先创建peak200文件夹，该输出文件将使用bedtools进行构建fasta
-dir.create(paste0(path, 'peak200/'))
+> 这里我为什么又要用500bp作区间呢，原因是后续我们做meme分析的时候，在peak intersect这一步，得到的peak的长度是不一致的，导致meme出现bug。
+> 于是取500bp，然后将交集得到的区间，补全到所需的300bp就行了。
+> 参考 [2.peak取重叠区域做meme分析](https://github.com/y741269430/MEMEsuite?tab=readme-ov-file#2peak%E5%8F%96%E9%87%8D%E5%8F%A0%E5%8C%BA%E5%9F%9F%E5%81%9Ameme%E5%88%86%E6%9E%90)
 
-for (i in 1:length(pm_peak200_region)) {
-  write.table(x = pm_peak200_region[[i]],
-              file = paste0(path, 'peak200/', names(pm_peak200_region)[i], '_equal_p.bed'),
+```r
+# 预先创建peak500文件夹，该输出文件将使用bedtools进行构建fasta
+dir.create(paste0(path, 'peak500/'))
+
+for (i in 1:length(pm_peak500_region)) {
+  write.table(x = pm_peak500_region[[i]],
+              file = paste0(path, 'peak500/', names(pm_peak500_region)[i], '_equal_p.bed'),
               sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
 
