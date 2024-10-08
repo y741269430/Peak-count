@@ -146,7 +146,8 @@ ggvenn(data_ls,
        text_size = 10)
 ```
 
-## 4.构建 Multicov 计算count所用的bed文件 
+## 4.构建 Multicov 计算count所用的bed文件   
+```r
 count_bed <- lapply(peakAnno_df, function(x){
   x$unique_name <- paste('Peak', 1:nrow(x), x$SYMBOL, x$Group, sep = '_')
   x <- x[, c("seqnames","start","end", "unique_name")]
@@ -158,6 +159,7 @@ for (i in 1:length(count_bed)) {
               file = paste0(path, 'count/', names(count_bed)[i], '_Multicov.bed'),
               sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
+```
 
 ---
 ## 5.构建meme-chip所需的bed文件  
