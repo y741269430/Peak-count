@@ -7,6 +7,7 @@
 - 3.1 筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
 - 3.2 输出saf文件格式的bed
 - 3.3 进行featurecount定量  
+- 4.构建 Multicov 计算count所用的bed文件  
 
 #### 设置工作路径 ####  
 ```r
@@ -145,8 +146,21 @@ ggvenn(data_ls,
        text_size = 10)
 ```
 
+## 4.构建 Multicov 计算count所用的bed文件 
+count_bed <- lapply(peakAnno_df, function(x){
+  x$unique_name <- paste('Peak', 1:nrow(x), x$SYMBOL, x$Group, sep = '_')
+  x <- x[, c("seqnames","start","end", "unique_name")]
+  return(x)
+})
+
+for (i in 1:length(count_bed)) {
+  write.table(x = count_bed[[i]],
+              file = paste0(path, 'count/', names(count_bed)[i], '_Multicov.bed'),
+              sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
+
 ---
-## 4 构建meme-chip所需的bed文件  
+## 5.构建meme-chip所需的bed文件  
 采用启动子区peak中心位置左右扩展100bp作为motif预测的region，因为两个核小体之间大概50-80bp，而测序片段约200-300bp，长度越长预测越不精确。  
 参考  
 - https://meme-suite.org/meme/doc/meme-chip.html?man_type=web  
