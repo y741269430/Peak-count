@@ -7,7 +7,10 @@
 - 3.1 筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
 - 3.2 输出saf文件格式的bed
 - 3.3 进行featurecount定量  
-- 4.构建 Multicov 计算count所用的bed文件  
+- 4.Multicov 计算count
+- 4.1 构建 Multicov 计算count所用的bed文件
+- 4.2 将bed文件取交集并且计算count
+
 
 #### 设置工作路径 ####  
 ```r
@@ -146,7 +149,8 @@ ggvenn(data_ls,
        text_size = 10)
 ```
 
-## 4.构建 Multicov 计算count所用的bed文件   
+## 4.Multicov 计算count   
+### 4.1 构建 Multicov 计算count所用的bed文件
 ```r
 count_bed <- lapply(peakAnno_df, function(x){
   x$unique_name <- paste('Peak', 1:nrow(x), x$SYMBOL, x$Group, sep = '_')
@@ -160,6 +164,17 @@ for (i in 1:length(count_bed)) {
               sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 }
 ```
+### 4.2 将bed文件取交集并且计算count   
+```bash
+bedtools intersect -a CON_1_Multicov.bed -b CON_2_Multicov.bed > CON.bed
+bedtools intersect -a Tre_1_Multicov.bed -b Tre_2_Multicov.bed > Tre.bed
+bedtools intersect -a CON.bed -b Tre.bed > Multicov_input.bed
+
+bedtools multicov -bams CON_1.last.bam CON_2.last.bam Tre_1.last.bam Tre_2.last.bam -bed Multicov_input.bed > Multicov_count.csv &
+```
+参考  
+https://bedtools.readthedocs.io/en/latest/content/tools/multicov.html    
+https://www.jianshu.com/p/641c2c2cfd41  
 
 ---
 ## 5.构建meme-chip所需的bed文件  
