@@ -56,26 +56,9 @@ ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
 ## 3.筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）
 ```r
 region_bed <- lapply(peakAnno_df, function(x){
+  x$SYMBOL <- paste('Peak', 1:nrow(x), x$SYMBOL, x$Group, sep = '_')
   x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
-  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
-  colnames(x) <- c("GeneID","Chr","Start","End","Strand")
-  return(x)
-})
-
-pm_bed <- lapply(peakAnno_df, function(x){
-  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
-  x <- x[grep("Promoter", ignore.case = F, x$annotation), ]
-  x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
-  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
-  colnames(x) <- c("GeneID","Chr","Start","End","Strand")
-  return(x)
-})
-
-gb_bed <- lapply(peakAnno_df, function(x){
-  x <- x[-grep("Rik$", ignore.case = F, x$SYMBOL),]
-  x <- x[grep("Promoter|Distal Intergenic", ignore.case = F, x$annotation), ]
-  x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
-  x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
+  #x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
   colnames(x) <- c("GeneID","Chr","Start","End","Strand")
   return(x)
 })
@@ -83,19 +66,13 @@ gb_bed <- lapply(peakAnno_df, function(x){
 
 储存在本地results, count文件夹内，需要提前创建该文件夹
 ```r
-save(peakAnno_df, peakAnnoList, region_bed, pm_bed, gb_bed, file = paste0(path, 'results/Anno_df.RData'))
+save(peakAnno_df, peakAnnoList, region_bed, file = paste0(path, 'results/Anno_df.RData'))
 
 #### 输出saf文件格式的bed
-for (i in 1:length(pm_bed)) {
-  write.table(x = pm_bed[[i]],
-              file = paste0(path, 'count/', names(pm_bed)[i], '_pm.bed'),
-              sep = "\t", row.names = FALSE, col.names = colnames(pm_bed[[i]]), quote = FALSE)
-}
-
-for (i in 1:length(gb_bed)) {
-  write.table(x = gb_bed[[i]],
-              file = paste0(path, 'count/', names(gb_bed)[i], '_gb.bed'),
-              sep = "\t", row.names = FALSE, col.names = colnames(gb_bed[[i]]), quote = FALSE)
+for (i in 1:length(region_bed)) {
+  write.table(x = region_bed[[i]],
+              file = paste0(path, 'count/', names(region_bed)[i], '_all.saf'),
+              sep = "\t", row.names = FALSE, col.names = colnames(region_bed[[i]]), quote = FALSE)
 }
 ```
 
@@ -146,7 +123,7 @@ bamPath <- sapply(bamNames, function(x){paste0(bamPath,x)})
 bamPath <- data.frame(bamPath); rownames(bamPath) <- str_split_fixed(bamNames, "_", n = 2)[,1]
 
 safPath <- paste0(path, 'count/')
-safNames <- dir(safPath, pattern = "_pm.bed$") 
+safNames <- dir(safPath, pattern = "_all.saf$") 
 safPath <- sapply(safNames, function(x){paste0(safPath,x)})   
 safPath <- data.frame(safPath)
 
