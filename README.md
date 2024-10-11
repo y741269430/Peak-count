@@ -154,6 +154,7 @@ ggvenn(data_ls,
 
 ## 4.Multicov 计算count   
 参考  
+- [Nat Commun 14, 7712 (2023)](https://www.nature.com/articles/s41467-023-43427-4#Sec11)
 - [multicov](https://bedtools.readthedocs.io/en/latest/content/tools/multicov.html)    
 - [Bedtools-Multicov---reads计数](https://www.jianshu.com/p/641c2c2cfd41)   
 
