@@ -61,7 +61,8 @@ ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
 ## 3.featurecount   
 参考  
 - [Nat Immunol 25, 496–511 (2024)](https://www.nature.com/articles/s41590-024-01753-9)
-- [Science advances vol. 10,13 (2024)](https://www.science.org/doi/10.1126/sciadv.adk0858)    
+- [Science advances vol. 10,13 (2024)](https://www.science.org/doi/10.1126/sciadv.adk0858)
+- [medRxiv 2025](https://www.medrxiv.org/content/10.1101/2025.04.02.25325129v1)
 
 ### 3.1 筛选saf文件所需要的列（GeneID, Chr, Start, End and Strand）   
 储存在本地results, count文件夹内，需要提前创建该文件夹   
