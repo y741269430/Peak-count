@@ -36,6 +36,12 @@ peakAnno_df <- lapply(peakAnno_df, function(x){
   colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
   return(x)
 })
+
+for (i in 1:length(peakAnno_df)) {
+  peakAnno_df[[i]]$Group <- str_split_fixed(peakAnno_df[[i]]$annotation, ' ', n = 2)[,1]
+  peakAnno_df[[i]]$Group[which(peakAnno_df[[i]]$Group == '3\'')] = '3UTR'
+  peakAnno_df[[i]]$Group[which(peakAnno_df[[i]]$Group == '5\'')] = '5UTR'
+}
 ```
 
 ## 2.基础绘图，peak占比，TSS热图等   
@@ -68,7 +74,7 @@ ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
 储存在本地results, count文件夹内，需要提前创建该文件夹   
 ```r
 region_bed <- lapply(peakAnno_df, function(x){
-  x$SYMBOL <- paste('Peak', 1:nrow(x), x$SYMBOL, x$Group, sep = '_')
+  x$SYMBOL <- paste0('Peak','_', 1:nrow(x), '_', x$SYMBOL, '_', x$Group)
   x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
   #x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
   colnames(x) <- c("GeneID","Chr","Start","End","Strand")
