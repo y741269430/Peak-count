@@ -130,7 +130,6 @@ for (i in 1:nrow(safPath)) {
   rm(i)
 }
 ```
-
 输出count list 并拼接样本矩阵（这里可能要先取基因交集再决定用哪些样本）
 ```r
 count_list <- lapply(peak_counts, function(x){
@@ -139,7 +138,6 @@ count_list <- lapply(peak_counts, function(x){
   x$SYMBOL <- rownames(x)
   return(x)
 })
-
 names(count_list) <- c(  )      # 重命名
 ```
 把相同SYMBOL的count合并
@@ -151,14 +149,22 @@ for (i in 1:length(count_list)) {
     group_by(SYMBOL) %>%
     summarise(Count = sum(Count, na.rm = TRUE))
 }
+save(peak_counts, count_list, file = paste0(readpath, 'results/count_list.RData'))
 ```
-
+提取所有数据框中的 SYMBOL 列并合并成一个向量
 ```r
+load(paste0(readpath, 'results/count_list.RData'))
+unique_symbols <- unique(unlist(lapply(count_list, function(x) x$SYMBOL), use.names = FALSE))
+# 对数据框补齐
+for (i in 1:length(count_list)) {
+  count_list[[i]] <- rbind(count_list[[i]], 
+                           data.frame('SYMBOL' = setdiff(unique_symbols, count_list[[i]]$SYMBOL),
+                                      'Count' = 0))
+  count_list[[i]] <- data.frame(count_list[[i]])
+  colnames(count_list[[i]])[2] <- names(count_list)[i]
+}
 raw_counts <- Reduce(merge, count_list)
-colnames(raw_counts)[-1] <- c(  )      # 重命名
-
-save(count_list, file = paste0(path, 'results/count_list.RData'))
-write.csv(raw_counts, paste0(path, 'results/raw_counts.csv'), row.names = F)
+write.csv(raw_counts, paste0(readpath, 'results/raw_counts.csv'), row.names = F)
 ```
 取交集的code如下  
 ```r
@@ -171,6 +177,17 @@ ggvenn(data_ls,
        stroke_color = 'white',
        text_size = 10)
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 ## 4.Multicov 计算count   
 参考  
