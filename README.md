@@ -132,7 +132,6 @@ for (i in 1:nrow(safPath)) {
 ```
 
 输出count list 并拼接样本矩阵（这里可能要先取基因交集再决定用哪些样本）
-
 ```r
 count_list <- lapply(peak_counts, function(x){
   x <- x$counts
@@ -142,6 +141,19 @@ count_list <- lapply(peak_counts, function(x){
 })
 
 names(count_list) <- c(  )      # 重命名
+```
+把相同SYMBOL的count合并
+```r
+for (i in 1:length(count_list)) {
+  colnames(count_list[[i]])[1] <- 'Count'
+  
+  count_list[[i]] <- count_list[[i]] %>%
+    group_by(SYMBOL) %>%
+    summarise(Count = sum(Count, na.rm = TRUE))
+}
+```
+
+```r
 raw_counts <- Reduce(merge, count_list)
 colnames(raw_counts)[-1] <- c(  )      # 重命名
 
