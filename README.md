@@ -183,6 +183,8 @@ ggvenn(data_ls,
 ```
 差异分析       
 ```r
+source('chipseq_code.R')
+
 raw_counts <- read.csv(paste0(readpath, 'results/raw_counts.csv'))
 raw_counts <- na.omit(raw_counts)
 
