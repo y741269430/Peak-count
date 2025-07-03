@@ -74,7 +74,7 @@ ggplot2::ggsave(paste0(path, "results/plotAvgProf.pdf"),
 储存在本地results, count文件夹内，需要提前创建该文件夹   
 ```r
 region_bed <- lapply(peakAnno_df, function(x){
-  x$SYMBOL <- paste0('Peak','_', 1:nrow(x), '_', x$SYMBOL, '_', x$Group)
+  x$SYMBOL <- paste0('Peak','_', 1:nrow(x), '_', x$SYMBOL, '_', x$Group)  # 这一步把基因组上每一个元件都标记出来
   x <- x[, c("SYMBOL","seqnames","start","end", "strand")]
   #x$SYMBOL <- paste0('Peak', 1:nrow(x),'_', x$SYMBOL)
   colnames(x) <- c("GeneID","Chr","Start","End","Strand")
@@ -142,6 +142,10 @@ names(count_list) <- c(  )      # 重命名
 ```
 把相同SYMBOL的count合并
 ```r
+# 这一步是把promoter,genebody等各种元件call的peak都合在一起了
+for (i in 1:length(count_list)) {count_list[[i]]$SYMBOL <- str_split_fixed(rownames(count_list[[i]]), '_', n = 4)[,3] }
+
+# 取相同基因名的count进行合并
 for (i in 1:length(count_list)) {
   colnames(count_list[[i]])[1] <- 'Count'
   
@@ -151,7 +155,7 @@ for (i in 1:length(count_list)) {
 }
 save(peak_counts, count_list, file = paste0(readpath, 'results/count_list.RData'))
 ```
-提取所有数据框中的 SYMBOL 列并合并成一个向量
+提取所有数据框中的 SYMBOL 列并合并成一个向量      
 ```r
 load(paste0(readpath, 'results/count_list.RData'))
 unique_symbols <- unique(unlist(lapply(count_list, function(x) x$SYMBOL), use.names = FALSE))
@@ -166,7 +170,7 @@ for (i in 1:length(count_list)) {
 raw_counts <- Reduce(merge, count_list)
 write.csv(raw_counts, paste0(readpath, 'results/raw_counts.csv'), row.names = F)
 ```
-取交集的code如下  
+取交集的code如下       
 ```r
 data_ls <- list('con1' = count_list[[1]]$SYMBOL, 
                 'con2' = count_list[[2]]$SYMBOL, 
@@ -177,15 +181,91 @@ ggvenn(data_ls,
        stroke_color = 'white',
        text_size = 10)
 ```
+差异分析       
+```r
+raw_counts <- read.csv(paste0(readpath, 'results/raw_counts.csv'))
+raw_counts <- na.omit(raw_counts)
 
+rownames(raw_counts) <- raw_counts$SYMBOL
+raw_counts <- raw_counts[-c(1,2,7,10)]
+myGrouplist(raw_counts)
+raw_counts <- round(raw_counts)
 
+df_filtered <- raw_counts %>% filter(!(CTRL_2 == 0 & CTRL_3 == 0))     # 把相同样本都为0的行去除
+df_filtered <- df_filtered %>% filter(!(CP_1 == 0 & CP_2 == 0))  # 把相同样本都为0的行去除
+df_filtered1 <- df_filtered[,-c(5,6)]
+```
+标准化       
+```r
+nor <- myNormal(df_filtered1, myGrouplist(df_filtered1))
+```
+PCA       
+```r
+myPCA(nor, myGrouplist(df_filtered1))
+ggplot2::ggsave(paste0(readpath, "results/PCA_CPvsCT.pdf"),
+                height = 5, width = 8, dpi = 300, limitsize = FALSE)
+```
+以下同理       
+```r
+df_filtered <- raw_counts %>% filter(!(CTRL_2 == 0 & CTRL_3 == 0))
+df_filtered <- df_filtered %>% filter(!(S_1 == 0 & S_2 == 0))
+df_filtered2 <- df_filtered[,-c(3,4)]
+nor <- myNormal(df_filtered2, myGrouplist(df_filtered2))
+myPCA(nor, myGrouplist(df_filtered2))
+ggplot2::ggsave(paste0(readpath, "results/PCA_SvsCT.pdf"),
+                height = 5, width = 8, dpi = 300, limitsize = FALSE)
+```
+DESeq2计算      
+```r
+all_ls <- list('CPvsCT' = myDESeq2(df_filtered1, 2, 2, id = 'SYMBOL'),
+               'SvsCT' = myDESeq2(df_filtered2, 2, 2, id = 'SYMBOL'))
 
+deg_ls <- lapply(all_ls, function(x){ 
+  x <- subset(x, pvalue < 0.05 & abs(log2FC) >= 1.5) 
+  x <- x[order(x$log2FC, decreasing = T), ]
+})
 
+save(all_ls, deg_ls, file = paste0(readpath, 'results/DEG_GO.RData'))
 
+write.xlsx(deg_ls, file = paste0(readpath, 'results/deg_ls.xlsx'))
+```
+火山图     
+```r
+p <- list()
+for (i in 1:2) { p[[i]] <- myVol(all_ls[[i]], title = names(all_ls)[i]) }
+p <- plot_grid(plotlist = p, nrow = 1)
+ggplot2::ggsave(paste0(readpath, "results/volcano.pdf"), plot = p, 
+                height = 7, width = 14, dpi = 300, limitsize = FALSE)
+```
+分割上下调基因，KEGG/GO分析     
+```r
+deg_ls2 <- c(lapply(deg_ls, function(x){x <- x[x$log2FC > 0,]}),
+             lapply(deg_ls, function(x){x <- x[x$log2FC < 0,]}))
+names_up <- character()
+names_down <- character()
 
+for (j in 1:length(deg_ls)) {names_up <- c(names_up, paste0('UP ', names(deg_ls)[j]))}
+for (j in 1:length(deg_ls)) {names_down <- c(names_down, paste0('DOWN ', names(deg_ls)[j]))}
 
+names(deg_ls2) <- c(names_up, names_down)
+input <- lapply(deg_ls2, function(x){ x <- x$ENTREZID })
 
+kegg <- clusterProfiler::compareCluster(input, fun = "my_enrichKEGG", organism = 'mmu', keyType = "kegg")
+kegg@compareClusterResult$Description <- str_split_fixed(kegg@compareClusterResult$Description, ' - Mus ', n = 2)[,1]
+kegg@compareClusterResult <- geneID2SYMBOL2(kegg@compareClusterResult)
 
+BP <- clusterProfiler::compareCluster(input, fun = "enrichGO", ont = "BP",
+                                      OrgDb = org.Mm.eg.db, keyType = 'ENTREZID', readable = T)
+```
+保存      
+```r
+save(all_ls, deg_ls, kegg, BP, file = paste0(readpath, 'results/DEG_GO.RData'))
+
+text <- lapply(split(BP@compareClusterResult, BP@compareClusterResult$Cluster), function(x){x <- x})
+write.xlsx(text, file = paste0(readpath, 'results/BP.xlsx'))
+text <- lapply(split(kegg@compareClusterResult, kegg@compareClusterResult$Cluster), function(x){x <- x})
+write.xlsx(text, file = paste0(readpath, 'results/KEGG.xlsx'))
+```
 
 
 
