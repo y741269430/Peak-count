@@ -36,7 +36,29 @@ peakAnno_df <- lapply(peakAnno_df, function(x){
   colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
   return(x)
 })
-
+```
+如果要对启动子区域进行划分，就跑下面这段
+```r
+peakAnno_df <- lapply(peakAnno_df, function(x) {
+  # 改变列名
+  colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
+  
+  # 创建新列Group，并根据annotation列的值赋值
+  x$Group <- x$annotation
+  x$Group[grep('Promoter',x$annotation)] = 'Promoter'
+  x$Group[grep('Downstream',x$annotation)] = 'Downstream'
+  x$Group[grep('Intron',x$annotation)] = 'Intron'
+  x$Group[grep('Exon',x$annotation)] = 'Exon'
+  
+  # 根据distanceToTSS的值给label列赋值
+  # 注意这里的条件需要根据您的具体需求来调整
+  x$label <- ifelse(x$distanceToTSS >= -10000 & x$distanceToTSS <= -7000, '710k',
+                    ifelse(x$distanceToTSS >= -7000 & x$distanceToTSS < -3000, '37k',
+                           ifelse(x$distanceToTSS >= -3000 & x$distanceToTSS <= 3000, '3k', 'pass')))
+  return(x)
+})
+```
+```r
 for (i in 1:length(peakAnno_df)) {
   peakAnno_df[[i]]$Group <- str_split_fixed(peakAnno_df[[i]]$annotation, ' ', n = 2)[,1]
   peakAnno_df[[i]]$Group[which(peakAnno_df[[i]]$Group == '3\'')] = '3UTR'
