@@ -32,12 +32,15 @@ peakAnnoList <- lapply(peak, annotatePeak, TxDb=txdb, tssRegion=c(-3000, 3000),
                        annoDb="org.Mm.eg.db", verbose=FALSE, overlap="all")
 peakAnno_df <- lapply(peakAnnoList, function(x){x <- as.data.frame(x)})
 
+```
+1. 正常来说跑这一段即可
+```r
 peakAnno_df <- lapply(peakAnno_df, function(x){
   colnames(x)[6:12] <- c('name', 'score', 'strand', 'signalValue', 'log10pValue', 'log10qValue', 'summit_peak_start')
   return(x)
 })
 ```
-如果要对启动子区域进行划分，就跑下面这段
+2. 如果要对启动子区域进行划分，就跑下面这段
 ```r
 peakAnno_df <- lapply(peakAnno_df, function(x) {
   # 改变列名
